@@ -7,7 +7,7 @@ import debounce from "lodash.debounce"
 // we need source maps for the stack traces
 // or else we won't know whether to ignore object access
 // from non-local code (e.g node_modules, browser extensions...)
-// this takes the stack trace file name from e.g.  
+// this takes the stack trace file name from e.g.
 // fileName: "http://localhost:3001/static/js/bundle.js",
 // to "http://localhost:3000/Users/alexholachek/Desktop/work/redux-usage-report/todomvc-example/src/containers/App.js
 // this raises an error during jest tests so limit to development
@@ -52,7 +52,25 @@ const shouldSkipProxy = () => {
   return false
 }
 
-// this function takes a reducer and returns 
+const deepCount = function (data) {
+  function count(obj) {
+    let counter = 0;
+
+    for (let key in obj) {
+      if (obj[key] !== null && typeof obj[key] === "object") {
+        counter += count(obj[key]);
+      } else {
+        counter++;
+      }
+    }
+
+    return counter;
+  }
+
+  return count(data);
+};
+
+// this function takes a reducer and returns
 // an augmented reducer that tracks redux usage
 function generateReduxReport(global, rootReducer) {
   globalObjectCache = globalObjectCache || global
@@ -65,11 +83,11 @@ function generateReduxReport(global, rootReducer) {
     removeOnChangeCallback() {
       global.reduxReport.onChangeCallback = undefined
     },
-    setBreakpoint: function(breakpoint) {
+    setBreakpoint: function (breakpoint) {
       if (!global.localStorage) return
       global.localStorage.setItem(localStorageKey, breakpoint)
     },
-    clearBreakpoint: function() {
+    clearBreakpoint: function () {
       if (!global.localStorage) return
       global.localStorage.setItem(localStorageKey, null)
     },
@@ -79,10 +97,22 @@ function generateReduxReport(global, rootReducer) {
       const stateCopy = JSON.parse(JSON.stringify(this.state))
       const unused = diff(stateCopy, used)
       replaceUndefinedWithNull(unused)
+      const usedLength = JSON.stringify(used).length;
+      const totalLength = JSON.stringify(stateCopy).length;
+      const percentUsed = usedLength > 2 ? Math.round(usedLength / totalLength * 100) : null;
+      const requestContext = stateCopy && stateCopy.preso && stateCopy.preso.requestContext;
+      const { query, verticalId } = requestContext;
+      const numberOfProps = deepCount(stateCopy);
+      const storeSize = (new TextEncoder().encode(JSON.stringify(stateCopy))).length;
       const report = {
         used,
         unused,
-        stateCopy
+        stateCopy,
+        percentUsed,
+        query,
+        verticalId,
+        numberOfProps,
+        storeSize
       }
       global.reduxReport.__inProgress = false
       return report
