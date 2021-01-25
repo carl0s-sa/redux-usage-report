@@ -21,13 +21,33 @@ const InfoContainer = styled.div`
   margin-bottom: 1rem;
 `
 
+const deepCount = function (data) {
+  function count(obj) {
+    let counter = 0;
+
+    for (let key in obj) {
+      if (obj[key] !== null && typeof obj[key] === "object") {
+        counter += count(obj[key]);
+      } else {
+        counter++;
+      }
+    }
+
+    return counter;
+  }
+
+  return count(data);
+};
+
 class ReduxTree extends Component {
   static propTypes = {
     theme: PropTypes.object.isRequired,
     currentBreakpoint: PropTypes.string,
     setBreakpoint: PropTypes.func.isRequired,
     used: PropTypes.object.isRequired,
-    stateCopy: PropTypes.object.isRequired
+    stateCopy: PropTypes.object.isRequired,
+    numberOfProps: PropTypes.number.isRequired,
+    storeSize: PropTypes.number.isRequired
   }
 
   isUsed(path) {
@@ -50,7 +70,24 @@ class ReduxTree extends Component {
     e.stopPropagation()
   }
 
-  getItemString = (type, data, itemType, itemString) => <FadeSpan>{itemType}</FadeSpan>
+  getItemString = (type, data, itemType, itemString) => {
+    const propertyCount = deepCount(data);
+    const propertyCountPercentage = this.props.numberOfProps ? (propertyCount / this.props.numberOfProps) * 100 : 0;
+    const sizeOfData = JSON.stringify(data).length;
+    const sizePercentage = this.props.storeSize ? (sizeOfData / this.props.storeSize) * 100 : 0;
+
+    return (
+      <React.Fragment>
+        <FadeSpan>{itemType}</FadeSpan>
+        <span style={{ color: this.props.theme.base0B, marginRight: '.3em' }}>
+          {Math.round((propertyCountPercentage + Number.EPSILON) * 100) / 100}%
+        </span>
+        <span style={{ color: this.props.theme.base0F }}>
+          {Math.round((sizePercentage + Number.EPSILON) * 100) / 100}%
+        </span>
+      </React.Fragment>
+    );
+  }
 
   valueRenderer = (val, ...args) => {
     const isUsed = this.isUsed(args.slice(1).reverse())
@@ -78,7 +115,7 @@ class ReduxTree extends Component {
   }
 
   render() {
-    const { used, stateCopy, theme, currentBreakpoint } = this.props
+    const { used, stateCopy, theme, currentBreakpoint, numberOfProps, storeSize } = this.props
     const usedLength = JSON.stringify(used).length
     const totalLength = JSON.stringify(stateCopy).length
     const percentUsed = usedLength > 2 ? `${Math.round(usedLength / totalLength * 100)}%` : "N/A"
@@ -87,6 +124,12 @@ class ReduxTree extends Component {
       <div>
         <InfoContainer>
           Estimated percentage used: <span style={{ color: theme.base0D }}>{percentUsed}</span>
+        </InfoContainer>
+        <InfoContainer>
+          Total number of props: <span style={{ color: theme.base0B }}>{numberOfProps}</span>
+        </InfoContainer>
+        <InfoContainer>
+          Store size: <span style={{ color: theme.base0F }}>{storeSize}</span>
         </InfoContainer>
         <JSONTree
           data={stateCopy}

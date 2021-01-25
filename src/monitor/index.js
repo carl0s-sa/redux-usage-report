@@ -61,7 +61,7 @@ const Tab = styled.a`
   background-color: ${props => (props.active ? "hsla(0, 0%, 100%, 0.08)" : null)};
   &:hover {
     background-color: ${props =>
-      props.active ? "hsla(0, 0%, 100%, 0.08)" : "hsla(0, 0%, 100%, 0.03)"};
+    props.active ? "hsla(0, 0%, 100%, 0.08)" : "hsla(0, 0%, 100%, 0.03)"};
   }
 `
 
@@ -74,13 +74,15 @@ class ReduxUsageMonitor extends Component {
     computedStates: PropTypes.array
   }
 
-  static update = function() {}
+  static update = function () { }
 
   state = {
     showInfo: false,
     currentBreakpoint: localStorage[localStorageKey],
     used: {},
-    stateCopy: {}
+    stateCopy: {},
+    numberOfProps: 0,
+    storeSize: 0
   }
 
   componentDidMount() {
@@ -95,11 +97,14 @@ class ReduxUsageMonitor extends Component {
 
   updateReport = () => {
     const report = window.reduxReport.generate()
-    if (isEqual(report.used, this.state.used) && isEqual(report.stateCopy, this.state.stateCopy))
+    if (isEqual(report.used, this.state.used) && isEqual(report.stateCopy, this.state.stateCopy) &&
+      isEqual(report.numberOfProps, this.state.numberOfProps) && isEqual(report.storeSize, this.state.storeSize))
       return
     this.setState({
       used: report.used,
-      stateCopy: report.stateCopy
+      stateCopy: report.stateCopy,
+      numberOfProps: report.numberOfProps,
+      storeSize: report.storeSize
     })
   }
 
@@ -149,6 +154,8 @@ class ReduxUsageMonitor extends Component {
               setBreakpoint={this.setBreakpoint}
               used={this.state.used}
               stateCopy={this.state.stateCopy}
+              numberOfProps={this.state.numberOfProps}
+              storeSize={this.state.storeSize}
             />
           </div>
         </ContentContainer>
